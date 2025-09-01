@@ -1,7 +1,6 @@
 import { z } from 'zod';
-import { AgentMode, coreAccountPlugin, coreHTSPlugin, type Context } from 'hedera-agent-kit';
-import { Client, AccountId, PrivateKey } from '@hashgraph/sdk';
-import { coreQueriesPlugin, coreConsensusPlugin } from 'hedera-agent-kit';
+import { AgentMode, coreAccountPlugin, coreTokenPlugin, coreConsensusPlugin, coreTokenQueryPlugin, coreAccountQueryPlugin, coreConsensusQueryPlugin, type Context } from 'hedera-agent-kit';
+import { Client, AccountId, PrivateKey, LedgerId } from '@hashgraph/sdk';
 import type { Configuration } from 'hedera-agent-kit';
 
 export type AppMode = 'autonomous' | 'human';
@@ -10,7 +9,6 @@ export type HederaNetwork = 'testnet' | 'mainnet';
 const EnvSchema = z.object({
     NEXT_PUBLIC_AGENT_MODE: z.enum(['autonomous', 'human']).default('human'),
     NEXT_PUBLIC_NETWORK: z.enum(['testnet', 'mainnet']).default('testnet'),
-    // Server-only (optional for now; required for autonomous mode in 2.2)
     HEDERA_OPERATOR_ID: z.string().optional(),
     HEDERA_OPERATOR_KEY: z.string().optional(),
 });
@@ -71,7 +69,7 @@ export function createHederaClient(bootstrap: AgentBootstrap): Client {
 export function createToolkitConfiguration(bootstrap: AgentBootstrap): Configuration {
     return {
         context: bootstrap.context,
-        plugins: [coreQueriesPlugin, coreConsensusPlugin, coreHTSPlugin, coreAccountPlugin],
+        plugins: [coreTokenPlugin, coreAccountPlugin, coreConsensusPlugin, coreTokenQueryPlugin, coreAccountQueryPlugin, coreConsensusQueryPlugin],
     };
 }
 

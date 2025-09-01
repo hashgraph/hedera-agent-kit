@@ -7,12 +7,12 @@ import {
     HederaJsonRpcMethod,
     HederaSessionEvent,
 } from "@hashgraph/hedera-wallet-connect";
+import { HederaNetwork } from "./agent";
 
-export type SupportedNetwork = "testnet" | "mainnet";
 
 let connectorSingleton: DAppConnector | undefined;
 
-export function mapNetworkToLedgerId(network: SupportedNetwork): LedgerId {
+export function mapNetworkToLedgerId(network: HederaNetwork): LedgerId {
     return network === "mainnet" ? LedgerId.MAINNET : LedgerId.TESTNET;
 }
 
@@ -21,7 +21,11 @@ export function getAllowedChains(): string[] {
     return [HederaChainId.Mainnet, HederaChainId.Testnet];
 }
 
-export function toHip30AccountId(network: SupportedNetwork, accountId: string): string {
+export function getNetwork(): HederaNetwork {
+    return (process.env.NEXT_PUBLIC_NETWORK as HederaNetwork) || "testnet";
+}
+
+export function toHip30AccountId(network: HederaNetwork, accountId: string): string {
     // network:shard.realm.num
     const hip30Network = network === "mainnet" ? "hedera:mainnet" : "hedera:testnet";
     return `${hip30Network}:${accountId}`;
@@ -33,7 +37,7 @@ export function initWalletConnector(): DAppConnector {
     const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
     if (!projectId) throw new Error("NEXT_PUBLIC_WC_PROJECT_ID is required");
 
-    const network = (process.env.NEXT_PUBLIC_NETWORK as SupportedNetwork) || "testnet";
+    const network = getNetwork();
     const ledgerId = mapNetworkToLedgerId(network);
 
     const metadata = {
@@ -118,7 +122,7 @@ export async function getPairedAccountId(): Promise<string> {
 
 export async function signAndExecuteBytes(params: { bytes: Uint8Array | ArrayBuffer; accountId: string }) {
     const c = await ensureWalletConnector();
-    const network = (process.env.NEXT_PUBLIC_NETWORK as SupportedNetwork) || "testnet";
+    const network = getNetwork();
     const hip30 = toHip30AccountId(network, params.accountId);
     const base64 = toBase64(params.bytes);
     // WalletConnect v2 expects a single string for the transaction list (base64-encoded bytes list)

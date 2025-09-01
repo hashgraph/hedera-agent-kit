@@ -31,7 +31,7 @@ const getERC20Address = async (client: Client, executeStrategyResult: ExecuteStr
   const record = await new TransactionRecordQuery()
     .setTransactionId(executeStrategyResult.raw.transactionId)
     .execute(client);
-  return record.contractFunctionResult?.getAddress(0);
+  return '0x' + record.contractFunctionResult?.getAddress(0);
 };
 
 const createERC20 = async (

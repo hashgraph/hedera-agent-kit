@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { signAndExecuteBytes, getPairedAccountId, connectWallet, ensureWalletConnector } from "@/lib/walletconnect";
+import { API_ENDPOINTS } from "@/lib/constants";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,7 +64,7 @@ export default function Chat() {
                 if (!acct) {
                     try { acct = await getPairedAccountId(); setAccountId(acct); } catch { }
                 }
-                const res = await fetch("/api/wallet/prepare", {
+                const res = await fetch(API_ENDPOINTS.WALLET_PREPARE, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ input, accountId: acct || undefined, messages: nextMessages }),
@@ -80,7 +81,7 @@ export default function Chat() {
                     setMessages(m => [...m, { role: "assistant", content: text }]);
                 }
             } else {
-                const res = await fetch("/api/agent", {
+                const res = await fetch(API_ENDPOINTS.AGENT, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ input, messages: nextMessages }),

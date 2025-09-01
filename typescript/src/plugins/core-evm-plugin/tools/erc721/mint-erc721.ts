@@ -45,7 +45,6 @@ const mintERC721 = async (
       mirrorNode,
     );
     const tx = HederaBuilder.executeTransaction(normalisedParams);
-    console.log('tx', JSON.stringify(tx, null, 2));
     const result = await handleTransaction(tx, client, context);
     return result;
   } catch (error) {

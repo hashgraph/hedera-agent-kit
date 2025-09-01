@@ -17,6 +17,13 @@ export const transferERC20Parameters = (_context: Context = {}) =>
     amount: z.number().describe('The amount of tokens to transfer.'),
   });
 
+export const createERC721Parameters = (_context: Context = {}) =>
+  z.object({
+    tokenName: z.string().describe('The name of the token.'),
+    tokenSymbol: z.string().describe('The symbol of the token.'),
+    baseURI: z.string().default('').describe('The base URI for token metadata.'),
+  });
+
 export const createERC20Parameters = (_context: Context = {}) =>
   z.object({
     tokenName: z.string().describe('The name of the token.'),
