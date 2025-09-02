@@ -1,10 +1,10 @@
 import { useCallback } from 'react';
 import { API_ENDPOINTS } from '@/lib/constants';
 import { Message, AgentMode, WalletPrepareResponse, AgentResponse } from '@/types';
+import { getPairedAccountId } from '@/lib/walletconnect';
 
 interface UseMessageSubmitProps {
     mode: AgentMode | undefined;
-    accountId: string;
     onMessagesChange: (updateFn: (messages: Message[]) => Message[]) => void;
     onPendingBytesChange: (bytes: string | null) => void;
     onTxStatusReset: () => void;
@@ -12,18 +12,19 @@ interface UseMessageSubmitProps {
 
 export function useMessageSubmit({
     mode,
-    accountId,
     onMessagesChange,
     onPendingBytesChange,
     onTxStatusReset,
 }: UseMessageSubmitProps) {
     const submitHumanModeMessage = useCallback(async (input: string, nextMessages: Message[]) => {
+        const acctId = await getPairedAccountId()
         const response = await fetch(API_ENDPOINTS.WALLET_PREPARE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 input,
-                accountId: accountId || undefined,
+                // accountId: accountId || undefined,
+                accountId: acctId,
                 messages: nextMessages
             }),
         });
@@ -41,7 +42,7 @@ export function useMessageSubmit({
 
         const text = json.result || "";
         onMessagesChange(m => [...m, { role: "assistant", content: text }]);
-    }, [accountId, onPendingBytesChange, onMessagesChange]);
+    }, [onPendingBytesChange, onMessagesChange]);
 
     const submitAgentModeMessage = useCallback(async (input: string, nextMessages: Message[]) => {
         const response = await fetch(API_ENDPOINTS.AGENT, {

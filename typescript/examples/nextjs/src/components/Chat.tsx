@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MessageList } from "@/components/MessageList";
 import { MessageInput } from "@/components/MessageInput";
 import { TransactionStatus } from "@/components/TransactionStatus";
-import { useWalletConnect } from "@/hooks/useWalletConnect";
+import { signAndExecuteBytes, getPairedAccountId, connectWallet, ensureWalletConnector } from "@/lib/walletconnect";
 import { useMessageSubmit } from "@/hooks/useMessageSubmit";
 import { useAutoSign } from "@/hooks/useAutoSign";
 import { Message, AgentMode } from "@/types";
@@ -22,21 +22,15 @@ export default function Chat() {
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
     const mode = process.env.NEXT_PUBLIC_AGENT_MODE as AgentMode | undefined;
-
-    const {
-        connectionState,
-        txStatus,
-        isSigning,
-        signAndExecute,
-        resetTxStatus,
-    } = useWalletConnect();
+    const [accountId, setAccountId] = useState<string>('');
+    const [txStatus, setTxStatus] = useState<string | null>(null);
+    const [isSigning, setIsSigning] = useState(false);
 
     const { submitMessage } = useMessageSubmit({
         mode,
-        accountId: connectionState.accountId,
         onMessagesChange: setMessages,
         onPendingBytesChange: setPendingBytes,
-        onTxStatusReset: resetTxStatus,
+        onTxStatusReset: () => setTxStatus(null),
     });
 
     const focusComposer = useCallback(() => {
@@ -75,26 +69,51 @@ export default function Chat() {
     const handleSign = useCallback(async () => {
         if (!pendingBytes) return;
         try {
-            const result = await signAndExecute(pendingBytes);
-            setMessages(m => [...m, { role: "assistant", content: JSON.stringify(result) }]);
+            setTxStatus('pending');
+            setIsSigning(true);
+            
+            // ensure connector initialised
+            await ensureWalletConnector('warn');
+            
+            // ensure we have an account id; if not, attempt to pair then derive
+            let acct = accountId;
+            if (!acct) {
+                try {
+                    acct = await getPairedAccountId();
+                    setAccountId(acct);
+                } catch {
+                    const session = await connectWallet();
+                    const derived = session?.namespaces?.hedera?.accounts?.[0]?.split(':').pop() ?? '';
+                    if (!derived) throw new Error('No wallet account available after connecting');
+                    acct = derived;
+                    setAccountId(acct);
+                }
+            }
+            
+            const bytes = typeof window === 'undefined' 
+                ? Buffer.from(pendingBytes, 'base64') 
+                : Uint8Array.from(atob(pendingBytes), c => c.charCodeAt(0));
+            
+            const result = await signAndExecuteBytes({ bytes, accountId: acct });
+            setTxStatus('confirmed');
+            setMessages(m => [...m, { role: 'assistant', content: JSON.stringify(result) }]);
             setPendingBytes(null);
             setOpenReview(false);
         } catch (e) {
+            setTxStatus(null);
             setError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setIsSigning(false);
         }
-    }, [pendingBytes, signAndExecute]);
-
-    const handleAccountIdChange = useCallback((_accountId: string) => {
-        // This would update the connection state inside the hook
-    }, []);
+    }, [pendingBytes, accountId]);
 
     useAutoSign({
         mode,
         pendingBytes,
         isSigning,
-        accountId: connectionState.accountId,
+        accountId,
         signAndExecute: handleSign,
-        onAccountIdChange: handleAccountIdChange,
+        onAccountIdChange: setAccountId,
         onOpenReview: setOpenReview,
     });
 

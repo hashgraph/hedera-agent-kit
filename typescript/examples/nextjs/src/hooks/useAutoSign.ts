@@ -7,7 +7,7 @@ interface UseAutoSignProps {
     pendingBytes: string | null;
     isSigning: boolean;
     accountId: string;
-    signAndExecute: (bytes: string) => Promise<unknown>;
+    signAndExecute: () => Promise<void>;
     onAccountIdChange: (accountId: string) => void;
     onOpenReview: (open: boolean) => void;
 }
@@ -38,7 +38,7 @@ export function useAutoSign({
                 }
                 
                 if (acct && !isSigning && pendingBytes) {
-                    await signAndExecute(pendingBytes);
+                    await signAndExecute();
                 } else {
                     onOpenReview(true);
                 }
