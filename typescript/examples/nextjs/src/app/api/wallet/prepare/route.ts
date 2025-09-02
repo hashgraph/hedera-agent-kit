@@ -1,16 +1,18 @@
 import { NextRequest } from 'next/server';
-import { createAgentBootstrap } from '@/lib/agent';
+import { createAgentBootstrap } from '@/lib/agent-config';
 import {
     PrepareSchema,
     createErrorResponse,
     createSuccessResponse,
     transformMessagesToHistory,
+} from '@/lib/api-utils';
+import {
     initializeLLM,
     createHederaToolkit,
     createChatPrompt,
     createAgentExecutorWithPrompt,
     extractResultFromResponse,
-} from '@/lib/api-utils';
+} from '@/lib/agent-factory';
 import { extractBytesFromAgentResponse } from '@/lib/bytes-utils';
 
 export const runtime = 'nodejs';

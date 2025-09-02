@@ -7,7 +7,7 @@ import {
     HederaJsonRpcMethod,
     HederaSessionEvent,
 } from "@hashgraph/hedera-wallet-connect";
-import { HederaNetwork } from "./agent";
+import { HederaNetwork } from "./agent-config";
 
 
 let connectorSingleton: DAppConnector | undefined;

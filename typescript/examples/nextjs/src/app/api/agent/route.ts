@@ -4,12 +4,14 @@ import {
     createErrorResponse,
     createSuccessResponse,
     transformMessagesToHistory,
+} from '@/lib/api-utils';
+import {
     initializeLLM,
     createHederaToolkit,
     createChatPrompt,
     createAgentExecutorWithPrompt,
     extractResultFromResponse,
-} from '@/lib/api-utils';
+} from '@/lib/agent-factory';
 
 export const runtime = 'nodejs';
 

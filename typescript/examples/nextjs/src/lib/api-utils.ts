@@ -1,10 +1,5 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createLLMFromEnv } from '@/lib/llm';
-import { createAgentBootstrap, createToolkitConfiguration, createHederaClient } from '@/lib/agent';
-import { HederaLangchainToolkit } from 'hedera-agent-kit';
-import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
-import { AgentExecutor, createToolCallingAgent } from 'langchain/agents';
 import { AIMessage, HumanMessage } from '@langchain/core/messages';
 import { Message } from '@/types';
 
@@ -36,64 +31,4 @@ export function transformMessagesToHistory(messages: Message[]): (HumanMessage |
     return messages.map(m =>
         m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content),
     );
-}
-
-export function initializeLLM() {
-    try {
-        return createLLMFromEnv();
-    } catch (e) {
-        const message = e instanceof Error ? e.message : 'Invalid AI provider configuration';
-        throw new Error(message);
-    }
-}
-
-export function createHederaToolkit(bootstrap?: ReturnType<typeof createAgentBootstrap>, accountId?: string) {
-    const agentBootstrap = bootstrap || createAgentBootstrap();
-    const client = createHederaClient(agentBootstrap);
-    const baseConfiguration = createToolkitConfiguration(agentBootstrap);
-    if (accountId) {
-        baseConfiguration.context = baseConfiguration.context || {};
-        baseConfiguration.context.accountId = accountId;
-    }
-    // const configuration = accountId 
-    //     ? {
-    //         ...baseConfiguration,
-    //         context: {
-    //             ...agentBootstrap.context,
-    //             accountId: accountId,
-    //         },
-    //     }
-    //     : baseConfiguration;
-
-    const hederaToolkit = new HederaLangchainToolkit({ client, configuration });
-    const tools = hederaToolkit.getTools();
-
-    return { bootstrap: agentBootstrap, tools };
-}
-
-export function createChatPrompt(systemMessage: string) {
-    return ChatPromptTemplate.fromMessages([
-        ['system', systemMessage],
-        new MessagesPlaceholder('history'),
-        ['human', '{input}'],
-        ['placeholder', '{agent_scratchpad}'],
-    ]);
-}
-
-export function createAgentExecutorWithPrompt(
-    llm: ReturnType<typeof createLLMFromEnv>,
-    tools: ReturnType<HederaLangchainToolkit['getTools']>,
-    prompt: ChatPromptTemplate,
-    returnIntermediateSteps = false
-) {
-    const agent = createToolCallingAgent({ llm, tools, prompt });
-    return new AgentExecutor({ agent, tools, returnIntermediateSteps });
-}
-
-export function extractResultFromResponse(response: unknown): string {
-    if (typeof response === 'object' && response !== null && 'output' in response) {
-        const output = (response as { output: unknown }).output;
-        return typeof output === 'string' ? output : (output as { text?: string })?.[0]?.text || '';
-    }
-    return '';
 }
