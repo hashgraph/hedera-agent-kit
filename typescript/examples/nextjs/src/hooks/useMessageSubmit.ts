@@ -17,6 +17,48 @@ export function useMessageSubmit({
     onPendingBytesChange,
     onTxStatusReset,
 }: UseMessageSubmitProps) {
+    const submitHumanModeMessage = useCallback(async (input: string, nextMessages: Message[]) => {
+        const response = await fetch(API_ENDPOINTS.WALLET_PREPARE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                input,
+                accountId: accountId || undefined,
+                messages: nextMessages
+            }),
+        });
+
+        const json: WalletPrepareResponse = await response.json();
+        if (!response.ok || !json.ok) {
+            throw new Error(json.error || "Request failed");
+        }
+
+        if (json.bytesBase64) {
+            onPendingBytesChange(json.bytesBase64);
+            onMessagesChange(m => [...m, { role: "assistant", content: "Transaction requires signature." }]);
+            return;
+        }
+
+        const text = json.result || "";
+        onMessagesChange(m => [...m, { role: "assistant", content: text }]);
+    }, [accountId, onPendingBytesChange, onMessagesChange]);
+
+    const submitAgentModeMessage = useCallback(async (input: string, nextMessages: Message[]) => {
+        const response = await fetch(API_ENDPOINTS.AGENT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ input, messages: nextMessages }),
+        });
+
+        const json: AgentResponse = await response.json();
+        if (!response.ok || !json.ok) {
+            throw new Error(json.error || "Request failed");
+        }
+
+        const text = json.result;
+        onMessagesChange(m => [...m, { role: "assistant", content: text }]);
+    }, [onMessagesChange]);
+
     const submitMessage = useCallback(async (input: string, messages: Message[]) => {
         onTxStatusReset();
         onPendingBytesChange(null);
@@ -25,40 +67,11 @@ export function useMessageSubmit({
         onMessagesChange(() => nextMessages);
 
         if (mode === "human") {
-            const res = await fetch(API_ENDPOINTS.WALLET_PREPARE, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    input,
-                    accountId: accountId || undefined,
-                    messages: nextMessages
-                }),
-            });
-
-            const json: WalletPrepareResponse = await res.json();
-            if (!res.ok || !json.ok) throw new Error(json.error || "Request failed");
-
-            if (json.bytesBase64) {
-                onPendingBytesChange(json.bytesBase64);
-                onMessagesChange(m => [...m, { role: "assistant", content: "Transaction requires signature." }]);
-            } else {
-                const text = json.result || "";
-                onMessagesChange(m => [...m, { role: "assistant", content: text }]);
-            }
+            await submitHumanModeMessage(input, nextMessages);
         } else {
-            const res = await fetch(API_ENDPOINTS.AGENT, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ input, messages: nextMessages }),
-            });
-
-            const json: AgentResponse = await res.json();
-            if (!res.ok || !json.ok) throw new Error(json.error || "Request failed");
-
-            const text = json.result;
-            onMessagesChange(m => [...m, { role: "assistant", content: text }]);
+            await submitAgentModeMessage(input, nextMessages);
         }
-    }, [mode, accountId, onMessagesChange, onPendingBytesChange, onTxStatusReset]);
+    }, [mode, submitHumanModeMessage, submitAgentModeMessage, onMessagesChange, onPendingBytesChange, onTxStatusReset]);
 
     return { submitMessage };
 }
