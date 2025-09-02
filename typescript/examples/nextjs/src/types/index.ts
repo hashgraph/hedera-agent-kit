@@ -3,8 +3,6 @@ export type Message = {
   content: string;
 };
 
-export type TransactionStatus = "pending" | "confirmed" | null;
-
 export type AgentMode = "human" | "auto";
 
 export type ApiResponse<T = unknown> = {
@@ -23,24 +21,10 @@ export type WalletPrepareResponse = ApiResponse<{
   bytesBase64?: string;
 }>;
 
-export type SignResult = {
-  transactionId?: string;
-  receipt?: unknown;
-  [key: string]: unknown;
-};
-
-export type WalletConnectionState = {
-  accountId: string;
-  isConnected: boolean;
-  isPairing: boolean;
-};
-
 export type ChatState = {
   messages: Message[];
   input: string;
   loading: boolean;
   error: string | null;
   pendingBytes: string | null;
-  txStatus: TransactionStatus;
-  isSigning: boolean;
 };

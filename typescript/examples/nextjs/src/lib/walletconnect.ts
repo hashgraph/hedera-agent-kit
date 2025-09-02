@@ -149,5 +149,3 @@ export function fromBase64(base64: string): Uint8Array {
     for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
     return out;
 }
-
-

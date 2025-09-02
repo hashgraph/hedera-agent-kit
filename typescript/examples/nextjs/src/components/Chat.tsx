@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MessageList } from "@/components/MessageList";
 import { MessageInput } from "@/components/MessageInput";
 import { TransactionStatus } from "@/components/TransactionStatus";
-import { useWalletConnection } from "@/hooks/useWalletConnection";
+import { useWalletConnect } from "@/hooks/useWalletConnect";
 import { useMessageSubmit } from "@/hooks/useMessageSubmit";
 import { useAutoSign } from "@/hooks/useAutoSign";
 import { Message, AgentMode } from "@/types";
@@ -29,7 +29,7 @@ export default function Chat() {
         isSigning,
         signAndExecute,
         resetTxStatus,
-    } = useWalletConnection();
+    } = useWalletConnect();
 
     const { submitMessage } = useMessageSubmit({
         mode,
@@ -56,11 +56,11 @@ export default function Chat() {
 
     const handleSubmit = useCallback(async () => {
         if (!input.trim()) return;
-        
+
         setError(null);
         setLoading(true);
         setOpenReview(false);
-        
+
         try {
             await submitMessage(input, messages);
         } catch (e) {

@@ -47,23 +47,28 @@ export function initializeLLM() {
     }
 }
 
-export function createHederaAgentSetup(bootstrap?: ReturnType<typeof createAgentBootstrap>, accountId?: string) {
+export function createHederaToolkit(bootstrap?: ReturnType<typeof createAgentBootstrap>, accountId?: string) {
     const agentBootstrap = bootstrap || createAgentBootstrap();
     const client = createHederaClient(agentBootstrap);
-    const configuration = accountId 
-        ? {
-            ...createToolkitConfiguration(agentBootstrap),
-            context: {
-                ...agentBootstrap.context,
-                accountId: accountId,
-            },
-        }
-        : createToolkitConfiguration(agentBootstrap);
-    
+    const baseConfiguration = createToolkitConfiguration(agentBootstrap);
+    if (accountId) {
+        baseConfiguration.context = baseConfiguration.context || {};
+        baseConfiguration.context.accountId = accountId;
+    }
+    // const configuration = accountId 
+    //     ? {
+    //         ...baseConfiguration,
+    //         context: {
+    //             ...agentBootstrap.context,
+    //             accountId: accountId,
+    //         },
+    //     }
+    //     : baseConfiguration;
+
     const hederaToolkit = new HederaLangchainToolkit({ client, configuration });
     const tools = hederaToolkit.getTools();
-    
-    return { bootstrap: agentBootstrap, client, configuration, tools };
+
+    return { bootstrap: agentBootstrap, tools };
 }
 
 export function createChatPrompt(systemMessage: string) {

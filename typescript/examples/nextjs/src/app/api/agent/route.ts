@@ -5,7 +5,7 @@ import {
     createSuccessResponse,
     transformMessagesToHistory,
     initializeLLM,
-    createHederaAgentSetup,
+    createHederaToolkit,
     createChatPrompt,
     createAgentExecutorWithPrompt,
     extractResultFromResponse,
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
         const input = parsed.input;
         const history = parsed.messages || [];
 
-        const { bootstrap, tools } = createHederaAgentSetup();
+        const { bootstrap, tools } = createHederaToolkit();
         const historyMessages = transformMessagesToHistory(history);
         const chatPrompt = createChatPrompt('You are a helpful assistant that uses Hedera tools.');
         

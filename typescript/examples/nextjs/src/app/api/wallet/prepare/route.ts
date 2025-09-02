@@ -6,7 +6,7 @@ import {
     createSuccessResponse,
     transformMessagesToHistory,
     initializeLLM,
-    createHederaAgentSetup,
+    createHederaToolkit,
     createChatPrompt,
     createAgentExecutorWithPrompt,
     extractResultFromResponse,
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { input, accountId, messages } = PrepareSchema.parse(body);
 
-        const { tools } = createHederaAgentSetup(bootstrap, accountId);
+        const { tools } = createHederaToolkit(bootstrap, accountId);
         const historyMessages = transformMessagesToHistory(messages || []);
         const chatPrompt = createChatPrompt('You are a helpful assistant that returns Hedera transaction bytes for signing.');
         
