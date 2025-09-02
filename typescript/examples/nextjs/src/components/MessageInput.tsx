@@ -21,7 +21,7 @@ export const MessageInput = forwardRef<HTMLTextAreaElement, MessageInputProps>(
         };
 
         return (
-            <div className="gap-2 flex">
+            <div className="w-full gap-2 flex">
                 <Textarea
                     ref={ref}
                     id="agent-composer"
@@ -29,7 +29,7 @@ export const MessageInput = forwardRef<HTMLTextAreaElement, MessageInputProps>(
                     placeholder={placeholder}
                     onChange={(e) => onChange(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="min-h-[44px] max-h-40 resize-y"
+                    className="flex-1 min-h-[44px] max-h-40 resize-y"
                     disabled={disabled}
                 />
                 <Button onClick={onSubmit} disabled={disabled || !value}>
