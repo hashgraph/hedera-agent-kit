@@ -17,6 +17,8 @@ import {
   transferHbarParameters,
   updateAccountParameters,
   updateAccountParametersNormalised,
+  accountBalanceQueryParameters,
+  accountTokenBalancesQueryParameters,
 } from '@/shared/parameter-schemas/account.zod';
 import {
   createTopicParameters,
@@ -26,10 +28,6 @@ import {
 import { AccountId, Client, Hbar, PublicKey, TokenSupplyType, TokenType } from '@hashgraph/sdk';
 import { Context } from '@/shared/configuration';
 import z from 'zod';
-import {
-  accountBalanceQueryParameters,
-  accountTokenBalancesQueryParameters,
-} from '@/shared/parameter-schemas/query.zod';
 import { IHederaMirrornodeService } from '@/shared/hedera-utils/mirrornode/hedera-mirrornode-service.interface';
 import { toBaseUnit } from '@/shared/hedera-utils/decimals-utils';
 import Long from 'long';
@@ -38,11 +36,15 @@ import { AccountResolver } from '@/shared/utils/account-resolver';
 import { ethers } from 'ethers';
 import {
   createERC20Parameters,
+  createERC721Parameters,
+  mintERC721Parameters,
   transferERC20Parameters,
   transferERC721Parameters,
-  mintERC721Parameters,
-  createERC721Parameters,
 } from '@/shared/parameter-schemas/evm.zod';
+import {
+  normalisedTransactionRecordQueryParameters,
+  transactionRecordQueryParameters,
+} from '@/shared/parameter-schemas/transaction.zod';
 
 export default class HederaParameterNormaliser {
   static async normaliseCreateFungibleTokenParams(
@@ -366,7 +368,7 @@ export default class HederaParameterNormaliser {
     _context: Context,
     mirrorNode: IHederaMirrornodeService,
   ) {
-    const recipientAddress = await HederaParameterNormaliser.getHederaEVMAddress(
+    const recipientAddress = await AccountResolver.getHederaEVMAddress(
       params.recipientAddress,
       mirrorNode,
     );
@@ -393,14 +395,17 @@ export default class HederaParameterNormaliser {
     params: z.infer<ReturnType<typeof transferERC721Parameters>>,
     factoryContractAbi: string[],
     factoryContractFunctionName: string,
-    _context: Context,
+    context: Context,
     mirrorNode: IHederaMirrornodeService,
+    client: Client,
   ) {
-    const fromAddress = await HederaParameterNormaliser.getHederaEVMAddress(
-      params.fromAddress,
+    // Resolve fromAddress using AccountResolver pattern, similar to transfer-hbar
+    const resolvedFromAddress = AccountResolver.resolveAccount(params.fromAddress, context, client);
+    const fromAddress = await AccountResolver.getHederaEVMAddress(
+      resolvedFromAddress,
       mirrorNode,
     );
-    const toAddress = await HederaParameterNormaliser.getHederaEVMAddress(
+    const toAddress = await AccountResolver.getHederaEVMAddress(
       params.toAddress,
       mirrorNode,
     );
@@ -430,9 +435,11 @@ export default class HederaParameterNormaliser {
     factoryContractFunctionName: string,
     _context: Context,
     mirrorNode: IHederaMirrornodeService,
+    client: Client,
   ) {
-    const toAddress = await HederaParameterNormaliser.getHederaEVMAddress(
-      params.toAddress,
+    const resolvedToAddress = AccountResolver.resolveAccount(params.toAddress, _context, client);
+    const toAddress = await AccountResolver.getHederaEVMAddress(
+      resolvedToAddress,
       mirrorNode,
     );
     const contractId = await HederaParameterNormaliser.getHederaAccountId(
@@ -499,15 +506,35 @@ export default class HederaParameterNormaliser {
     return normalised;
   }
 
-  static async getHederaEVMAddress(
-    address: string,
-    mirrorNode: IHederaMirrornodeService,
-  ): Promise<string> {
-    if (!AccountResolver.isHederaAddress(address)) {
-      return address;
+  static normaliseGetTransactionRecordParams(
+    params: z.infer<ReturnType<typeof transactionRecordQueryParameters>>,
+    _context: Context,
+  ) {
+    const normalised: z.infer<ReturnType<typeof normalisedTransactionRecordQueryParameters>> = {
+      nonce: params.nonce,
+    } as any;
+
+    if (!params.transactionId) {
+      throw new Error('transactionId is required');
     }
-    const account = await mirrorNode.getAccount(address);
-    return account.evmAddress;
+
+    const mirrorNodeStyleRegex = /^\d+\.\d+\.\d+-\d+-\d+$/;
+    const sdkStyleRegex = /^(\d+\.\d+\.\d+)@(\d+)\.(\d+)$/;
+
+    if (mirrorNodeStyleRegex.test(params.transactionId)) {
+      // Already in mirror-node style, use as-is
+      normalised.transactionId = params.transactionId;
+    } else {
+      const match = params.transactionId.match(sdkStyleRegex);
+      if (!match) {
+        throw new Error(`Invalid transactionId format: ${params.transactionId}`);
+      }
+
+      const [, accountId, seconds, nanos] = match;
+      normalised.transactionId = `${accountId}-${seconds}-${nanos}`;
+    }
+
+    return normalised;
   }
 
   static async getHederaAccountId(

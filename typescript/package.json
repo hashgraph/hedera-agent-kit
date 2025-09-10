@@ -45,6 +45,10 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
+    "@langchain/anthropic": "0.3.26",
+    "@langchain/groq": "0.2.3",
+    "@semantic-release/changelog": "github:semantic-release/changelog",
+    "@semantic-release/git": "github:semantic-release/git",
     "@typescript-eslint/eslint-plugin": "^8.37.0",
     "@typescript-eslint/parser": "^8.37.0",
     "@vitest/coverage-v8": "^1.6.0",
@@ -56,16 +60,13 @@
     "globals": "^16.3.0",
     "husky": "^9.1.7",
     "prettier": "^3.6.2",
+    "semantic-release": "24.2.7",
+    "semantic-release-fail-on-major-bump": "^1.0.2",
     "tsconfig-paths": "^4.2.0",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.37.0",
-    "vitest": "^1.6.0",
-    "@langchain/groq": "0.2.3",
-    "@langchain/anthropic": "0.3.26",
-    "@semantic-release/changelog": "github:semantic-release/changelog",
-    "@semantic-release/git": "github:semantic-release/git",
-    "semantic-release": "24.2.7"
+    "vitest": "^1.6.0"
   },
   "files": [
     "dist/**/*"
@@ -79,6 +80,7 @@
       "main"
     ],
     "plugins": [
+      "semantic-release-fail-on-major-bump",
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
       "@semantic-release/changelog",

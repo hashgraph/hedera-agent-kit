@@ -10,6 +10,7 @@ import {
   TopicMessagesAPIResponse,
   TopicMessagesQueryParams,
   TopicMessagesResponse,
+  TransactionDetailsResponse,
   ContractInfo,
 } from './types';
 import BigNumber from 'bignumber.js';
@@ -27,7 +28,20 @@ export class HederaMirrornodeServiceDefaultImpl implements IHederaMirrornodeServ
   async getAccount(accountId: string): Promise<AccountResponse> {
     const url = `${this.baseUrl}/accounts/${accountId}`;
     const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch account ${accountId}: ${response.status} ${response.statusText}`,
+      );
+    }
+
     const data: AccountAPIResponse = await response.json();
+
+    // Check if the response is empty (no account found)
+    if (!data.account) {
+      throw new Error(`Account ${accountId} not found`);
+    }
+
     return {
       accountId: data.account,
       accountPublicKey: data?.key?.key,
@@ -37,7 +51,12 @@ export class HederaMirrornodeServiceDefaultImpl implements IHederaMirrornodeServ
   }
 
   async getAccountHBarBalance(accountId: string): Promise<BigNumber> {
-    const account = await this.getAccount(accountId);
+    let account;
+    try {
+      account = await this.getAccount(accountId);
+    } catch (error) {
+      throw Error(`Failed to fetch hbar balance for ${accountId}: ${error}`);
+    }
     return new BigNumber(account.balance.balance);
   }
 
@@ -48,6 +67,13 @@ export class HederaMirrornodeServiceDefaultImpl implements IHederaMirrornodeServ
     const tokenIdParam = tokenId ? `&token.id=${tokenId}` : '';
     const url = `${this.baseUrl}/accounts/${accountId}/tokens?${tokenIdParam}`;
     const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch balance for an account ${accountId}: ${response.status} ${response.statusText}`,
+      );
+    }
+
     return await response.json();
   }
 
@@ -100,6 +126,24 @@ export class HederaMirrornodeServiceDefaultImpl implements IHederaMirrornodeServ
   async getTokenInfo(tokenId: string): Promise<TokenInfo> {
     const url = `${this.baseUrl}/tokens/${tokenId}`;
     const response = await fetch(url);
+    return await response.json();
+  }
+
+  async getTransactionRecord(
+    transactionId: string,
+    nonce?: number,
+  ): Promise<TransactionDetailsResponse> {
+    let url = `${this.baseUrl}/transactions/${transactionId}`;
+    if (nonce !== undefined) {
+      url += `?nonce=${nonce}`;
+    }
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}. Message: ${response.statusText}`);
+    }
+
     return await response.json();
   }
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { Context } from '@/shared/configuration';
 import { getMirrornodeService } from '@/shared/hedera-utils/mirrornode/hedera-mirrornode-utils';
-import { tokenInfoQueryParameters } from '@/shared/parameter-schemas/query.zod';
+import { tokenInfoQueryParameters } from '@/shared/parameter-schemas/token.zod';
 import { Client } from '@hashgraph/sdk';
 import { Tool } from '@/shared/tools';
 import { PromptGenerator } from '@/shared/utils/prompt-generator';
@@ -33,13 +33,13 @@ const postProcess = (tokenInfo: TokenInfo) => {
     return (amount / 10 ** decimals).toLocaleString();
   };
 
-
   const formatKey = (key?: { _type: string; key: string } | null) => {
     if (!key) return 'Not Set';
     return key._type ? `${key.key}` : 'Present';
   };
 
-  const supplyType = tokenInfo.supply_type === 'INFINITE' ? 'Infinite' : tokenInfo.max_supply || 'Finite';
+  const supplyType =
+    tokenInfo.supply_type === 'INFINITE' ? 'Infinite' : tokenInfo.max_supply || 'Finite';
   const freezeStatus = tokenInfo.freeze_default ? 'Frozen' : 'Active';
 
   return `Here are the details for token **${tokenInfo.token_id}**:
